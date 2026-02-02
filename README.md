@@ -1,7 +1,7 @@
 # ceelo
 
 Realtime speech-to-soundboard and push-to-talk dictation for macOS.
-The Swift STT backend is the `parakeet_ptt` executable in this repo.
+This is a single Swift package at the repo root (`Package.swift`, `Sources/`), and the built executable is `parakeet_ptt`.
 
 ## Requirements
 - macOS with microphone access
