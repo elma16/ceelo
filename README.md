@@ -1,7 +1,7 @@
 # ceelo
 
 Realtime speech-to-soundboard and push-to-talk dictation for macOS.
-`parakeet_ptt` is the Swift STT backend used by ceelo.
+The Swift STT backend is the `parakeet_ptt` executable in this repo.
 
 ## Requirements
 - macOS with microphone access
@@ -17,14 +17,13 @@ https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml#performance
 
 ## Build
 ```sh
-cd parakeet_ptt
 swift build -c release
 ```
 
 ## Run (soundboard, default)
 From the repo root:
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt
+./.build/release/parakeet_ptt
 ```
 
 ## Sound assets
@@ -60,23 +59,23 @@ Example:
 
 Run with:
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt --rules sounds/rules.json
+./.build/release/parakeet_ptt --rules sounds/rules.json
 ```
 
 ## Low-latency tuning
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt --live-window 1.6 --live-update 0.25 --min-audio 0.3
+./.build/release/parakeet_ptt --live-window 1.6 --live-update 0.25 --min-audio 0.3
 ```
 
 ## Pause mic during playback (optional)
 Drop mic audio while sounds are playing to avoid feedback or re-triggering:
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt --pause-during-playback
+./.build/release/parakeet_ptt --pause-during-playback
 ```
 
 ## Push-to-talk dictation
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt --push-to-talk
+./.build/release/parakeet_ptt --push-to-talk
 ```
 - Hold Cmd+1 to record
 - Release to transcribe and paste into the active app
@@ -84,8 +83,8 @@ Drop mic audio while sounds are playing to avoid feedback or re-triggering:
 
 ## WAV transcription
 ```sh
-./parakeet_ptt/.build/release/parakeet_ptt --wav /path/to/audio.wav
+./.build/release/parakeet_ptt --wav /path/to/audio.wav
 ```
 
 ## Customize hotkey
-Edit `holdKeyCode` and `holdRequiredModifiers` in `parakeet_ptt/Sources/main.swift`.
+Edit `holdKeyCode` and `holdRequiredModifiers` in `Sources/main.swift`.
