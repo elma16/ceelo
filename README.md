@@ -2,7 +2,7 @@
 
 A realtime speech to soundboard for macOS.
 
-## INSTALL AND RUN
+## Installation
 
 Requires macOS 14+ and Xcode or the Swift command line tools.
 
@@ -41,7 +41,7 @@ and now you can run ceelo!
 The first run downloads the speech models (about 450 MB), and macOS asks for microphone access for your terminal
 app; see **PERMISSIONS** if it was refused.
 
-## SYNOPSIS
+## Synopsis
 
 ```
 ceelo [--sounds-dir DIR] [--rules FILE] [--live-window SEC] [--live-update SEC] [-q]
@@ -50,7 +50,7 @@ ceelo --test TEXT [--sounds-dir DIR] [--rules FILE]
 ceelo -h
 ```
 
-## DESCRIPTION
+## Description
 
 **ceelo** is a speech-triggered soundboard for macOS. It listens to the microphone, transcribes speech on-device
 with [FluidAudio's CoreML conversion of NVIDIA Parakeet TDT 0.6B v2](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml)
@@ -67,7 +67,7 @@ How it listens:
 Each sound in the sounds directory is triggered by its file name (`soft_bell.mp3` by "soft bell") unless a rules
 file says otherwise. The live transcript prints each word once, with a line break when speech pauses.
 
-## OPTIONS
+## Flags
 
 `--sounds-dir DIR`
 : Directory of sounds (`mp3`, `wav`, `m4a`, `aiff`, `aac`, `caf`). Default `./sounds`.
@@ -94,7 +94,7 @@ file says otherwise. The live transcript prints each word once, with a line brea
 `-h`, `--help`
 : Print usage and exit.
 
-## RULES FILE
+## The rules file
 
 A JSON file that sets what each sound responds to. Sounds it doesn't mention keep their file name as the phrase.
 
@@ -135,27 +135,19 @@ The `match` values:
 Unknown keys and other mistakes are errors. `ceelo --check-rules` lists them all, and `ceelo --test` tries
 sentences.
 
-## EXIT STATUS
+## Exit status messages
 
 - **0**: success.
 - **1**: the speech models failed to load, or the microphone is unavailable.
 - **2**: usage error, missing sounds, or invalid rules.
 
-## FILES
 
-`sounds/`
-: Default sounds directory. Sounds are local and never committed.
-
-`~/Library/Application Support/FluidAudio/Models`
-: Speech models, downloaded on first run (about 450 MB). The first run after a macOS update compiles them for the
-  Neural Engine, which takes about 15 s.
-
-## PERMISSIONS
+## Permissions
 
 macOS asks for **Microphone** access on behalf of the app running ceelo (Terminal, Visual Studio Code, …). If it
 was refused, allow it in **System Settings → Privacy & Security → Microphone** and restart that app.
 
-## EXAMPLES
+## Example usage
 
 ```sh
 .build/release/ceelo --test "i remember when"   # which sounds would this sentence play?
@@ -163,8 +155,7 @@ was refused, allow it in **System Settings → Privacy & Security → Microphone
 .build/release/ceelo --live-update 0.1 -q                      # react faster, hide the transcript
 ```
 
-## SEE ALSO
+## See also
 
-[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) (tests, benchmarks, design notes),
 [FluidAudio](https://github.com/FluidInference/FluidAudio),
 [Parakeet TDT 0.6B v2 CoreML](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml)
