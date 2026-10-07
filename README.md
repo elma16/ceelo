@@ -1,90 +1,170 @@
 # ceelo
 
-Realtime speech-to-soundboard and push-to-talk dictation for macOS.
-This is a single Swift package at the repo root (`Package.swift`, `Sources/`), and the built executable is `parakeet_ptt`.
+A realtime speech to soundboard for macOS.
 
-## Requirements
-- macOS with microphone access
-- Accessibility permission for the app or Terminal (event tap)
-- Xcode Command Line Tools / Swift toolchain
-- Internet on first run to download ASR models
+## INSTALL AND RUN
 
-## Model & performance
-ceelo uses the FluidInference Parakeet TDT 0.6B v2 CoreML model.
-Model files are not committed; the backend downloads them on first run or you can fetch them manually.
-Performance benchmarks and details:
-https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml#performance
+Requires macOS 14+ and Xcode or the Swift command line tools.
 
-## Build
+First clone the repo,
+
 ```sh
+git clone https://github.com/elma16/ceelo.git
+```
+
+compile ceelo,
+
+```sh
+cd ceelo
 swift build -c release
 ```
 
-## Run (soundboard, default)
-From the repo root:
+add the sounds you want (each file's name is the phrase that plays it, so `airhorn.mp3` plays when you say
+"airhorn"; optionally add `sounds/rules.json` to choose other phrases, see **RULES FILE**),
+
 ```sh
-./.build/release/parakeet_ptt
+mkdir -p sounds && cp ~/Downloads/airhorn.mp3 sounds/
 ```
 
-## Sound assets
-- Looks for files in `./sounds` (or `--sounds-dir PATH`)
-- Audio assets are local and intentionally not tracked in git
-- If no rules file is present, each filename becomes a keyword (partial matches are OK)
-- If a `rules.json` (or `soundboard.json`) exists in the sounds dir, only the listed rules will trigger
-- Defaults are tuned for low latency; you can tweak timing with flags
+check what each sound responds to,
 
-## Rules configuration (optional)
-Create `sounds/rules.json` to define advanced matching like setup phrases, exact triggers, substring triggers, or fuzzy triggers.
-If a rules file exists, you must add new sounds there for them to trigger.
-Use `trigger_fuzzy_any` for near-miss matches; `fuzzy_max_distance` controls per-token edit distance (default 1).
+```sh
+.build/release/ceelo --check-rules
+```
 
-Example:
+and now you can run ceelo!
+
+```sh
+.build/release/ceelo
+```
+
+The first run downloads the speech models (about 450 MB), and macOS asks for microphone access for your terminal
+app; see **PERMISSIONS** if it was refused.
+
+## SYNOPSIS
+
+```
+ceelo [--sounds-dir DIR] [--rules FILE] [--live-window SEC] [--live-update SEC] [-q]
+ceelo --check-rules [--sounds-dir DIR] [--rules FILE]
+ceelo --test TEXT [--sounds-dir DIR] [--rules FILE]
+ceelo -h
+```
+
+## DESCRIPTION
+
+**ceelo** is a speech-triggered soundboard for macOS. It listens to the microphone, transcribes speech on-device
+with [FluidAudio's CoreML conversion of NVIDIA Parakeet TDT 0.6B v2](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml)
+on the Apple Neural Engine, and plays a sound
+whenever its phrase is said.
+
+How it listens:
+
+- Every `--live-update` seconds, the last `--live-window` seconds of audio are transcribed, but only if the Silero
+  voice detector hears speech in them.
+- Each spoken phrase plays its sound once, even though overlapping windows hear it several times.
+- The microphone is ignored while a sound plays, plus 0.4 s, so sounds cannot trigger themselves.
+
+Each sound in the sounds directory is triggered by its file name (`soft_bell.mp3` by "soft bell") unless a rules
+file says otherwise. The live transcript prints each word once, with a line break when speech pauses.
+
+## OPTIONS
+
+`--sounds-dir DIR`
+: Directory of sounds (`mp3`, `wav`, `m4a`, `aiff`, `aac`, `caf`). Default `./sounds`.
+
+`--rules FILE`
+: Rules file; see **RULES FILE**. Default `rules.json` in the sounds directory, if it exists.
+
+`--live-window SEC`
+: Seconds of audio per transcription. Longer phrases need a longer window. Default 2.0, minimum 0.5.
+
+`--live-update SEC`
+: Seconds between transcriptions. Shorter fires sooner but uses more Neural Engine time. Default 0.15,
+  minimum 0.1.
+
+`-q`, `--quiet`
+: Don't print the live transcript.
+
+`--check-rules`
+: Check the sounds and rules, list what each sound responds to, and exit.
+
+`--test TEXT`
+: Show which sounds TEXT would play, as if it had been said, and exit. Needs no microphone or models.
+
+`-h`, `--help`
+: Print usage and exit.
+
+## RULES FILE
+
+A JSON file that sets what each sound responds to. Sounds it doesn't mention keep their file name as the phrase.
+
 ```json
 {
+  "defaults": { "match": "words", "within": 8 },
   "rules": [
-    {
-      "sound": "chime.wav",
-      "setup_any": ["heads up", "attention"],
-      "trigger_any": ["new ticket", "incoming message"],
-      "within_sec": 10
-    },
-    {
-      "sound": "soft_bell.wav",
-      "trigger_fuzzy_any": ["favorite"],
-      "fuzzy_max_distance": 1
-    }
+    { "sound": "chime", "say": ["new ticket"], "after": ["heads up"], "within": 10 },
+    { "sound": "airhorn.mp3", "say": ["epic"], "match": "contains" },
+    { "sound": "yoda", "say": ["yoda"], "match": "fuzzy" },
+    { "sound": "extra/horn.wav", "say": ["fifteen", "or is it"] },
+    { "sound": "pm", "say": [] }
   ]
 }
 ```
 
-Run with:
+| Key | Meaning |
+|---|---|
+| `sound` | File name, with or without extension, or a path relative to the sounds directory. Required. |
+| `say` | Phrases that play the sound. Required; `[]` switches the sound off. |
+| `match` | How phrases are compared (below). Default `words`. |
+| `after` | Phrases that must be said first: earlier in the same breath, or up to `within` seconds before. |
+| `within` | Seconds an `after` phrase stays valid. Default 8. |
+
+`defaults` sets `match` and `within` for every rule.
+
+Before comparing, both phrases and speech are lowercased and stripped of punctuation and symbols. Number words
+below 100 become digits, so "fifteen", "15" and "£15" all match.
+
+The `match` values:
+
+- `words`: whole words in order. Words of 8+ letters may differ by one letter, which covers British and American
+  spellings ("favourite" matches the model's "favorite").
+- `fuzzy`: whole words, more forgiving. Words of 4+ letters may differ by one letter, and 7+ letters by two, for
+  names the model misspells ("yoda" matches "Yuda").
+- `contains`: anywhere, including inside words ("epic" matches "epically").
+
+Unknown keys and other mistakes are errors. `ceelo --check-rules` lists them all, and `ceelo --test` tries
+sentences.
+
+## EXIT STATUS
+
+- **0**: success.
+- **1**: the speech models failed to load, or the microphone is unavailable.
+- **2**: usage error, missing sounds, or invalid rules.
+
+## FILES
+
+`sounds/`
+: Default sounds directory. Sounds are local and never committed.
+
+`~/Library/Application Support/FluidAudio/Models`
+: Speech models, downloaded on first run (about 450 MB). The first run after a macOS update compiles them for the
+  Neural Engine, which takes about 15 s.
+
+## PERMISSIONS
+
+macOS asks for **Microphone** access on behalf of the app running ceelo (Terminal, Visual Studio Code, …). If it
+was refused, allow it in **System Settings → Privacy & Security → Microphone** and restart that app.
+
+## EXAMPLES
+
 ```sh
-./.build/release/parakeet_ptt --rules sounds/rules.json
+.build/release/ceelo --test "i remember when"   # which sounds would this sentence play?
+.build/release/ceelo --sounds-dir ~/sfx --rules ~/sfx/party.json
+.build/release/ceelo --live-update 0.1 -q                      # react faster, hide the transcript
 ```
 
-## Low-latency tuning
-```sh
-./.build/release/parakeet_ptt --live-window 1.6 --live-update 0.25 --min-audio 0.3
-```
+## SEE ALSO
 
-## Pause mic during playback (optional)
-Drop mic audio while sounds are playing to avoid feedback or re-triggering:
-```sh
-./.build/release/parakeet_ptt --pause-during-playback
-```
-
-## Push-to-talk dictation
-```sh
-./.build/release/parakeet_ptt --push-to-talk
-```
-- Hold Cmd+1 to record
-- Release to transcribe and paste into the active app
-- Live partial output prints while holding
-
-## WAV transcription
-```sh
-./.build/release/parakeet_ptt --wav /path/to/audio.wav
-```
-
-## Customize hotkey
-Edit `holdKeyCode` and `holdRequiredModifiers` in `Sources/main.swift`.
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) (tests, benchmarks, design notes),
+[FluidAudio](https://github.com/FluidInference/FluidAudio),
+[Parakeet TDT 0.6B v2 CoreML](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v2-coreml)

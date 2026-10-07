@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-15
+    env:
+      # The ASR models are not downloaded on CI; their integration tests skip themselves.
+      CEELO_SKIP_MODEL_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Build all targets
+        run: swift build --build-tests
+
+      - name: Test with coverage (minimum 90%)
+        run: scripts/coverage.sh --min 90

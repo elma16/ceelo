@@ -2,19 +2,49 @@
 import PackageDescription
 
 let package = Package(
-    name: "parakeet_ptt",
+    name: "ceelo",
     platforms: [
         .macOS(.v14)
     ],
+    products: [
+        .executable(
+            name: "ceelo",
+            targets: ["ceelo"]
+        )
+    ],
     dependencies: [
-        .package(url: "https://github.com/FluidInference/FluidAudio", from: "0.0.1")
+        .package(url: "https://github.com/FluidInference/FluidAudio", .upToNextMinor(from: "0.10.0"))
     ],
     targets: [
-        .executableTarget(
-            name: "parakeet_ptt",
+        .target(
+            name: "CeeloCore",
             dependencies: [
                 .product(name: "FluidAudio", package: "FluidAudio")
-            ]
+            ],
+            path: "Sources/CeeloCore"
+        ),
+        .executableTarget(
+            name: "ceelo",
+            dependencies: [
+                "CeeloCore"
+            ],
+            path: "Sources/ceelo"
+        ),
+        .executableTarget(
+            name: "ceelo-bench",
+            dependencies: [
+                "CeeloCore",
+                .product(name: "FluidAudio", package: "FluidAudio")
+            ],
+            path: "Sources/ceelo-bench"
+        ),
+        .testTarget(
+            name: "CeeloCoreTests",
+            dependencies: [
+                "CeeloCore",
+                .product(name: "FluidAudio", package: "FluidAudio")
+            ],
+            path: "Tests/CeeloCoreTests"
         )
     ]
 )
